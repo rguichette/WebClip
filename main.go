@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 //define a home handler function which write a byte slice containing
@@ -22,6 +24,19 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 }
 func showSnippet(w http.ResponseWriter, r *http.Request) {
+	//Extract the value of the id parameter from the query and try to
+	//convert it to an integer using the strconv.Atoi() function.
+	// If it can't be converted to an integer, or the value is less than 1, we return 1 404 page not found
+
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
+	}
+	//Use the fmt.Fprint() function to interpolate the id value with our response
+	//and write it to the http.RespomseWriter.
+	fmt.Fprint(w, "Display a specific snippet with ID...", id)
+
 	w.Write([]byte("Display a specific snippet"))
 }
 func createSnippet(w http.ResponseWriter, r *http.Request) {
@@ -32,8 +47,10 @@ func createSnippet(w http.ResponseWriter, r *http.Request) {
 		//code and the w.Write() method to write a "Methos Not allowed"
 		// response body. We then return from the function so that the
 		//subsequesnt code is not executed
-		w.WriteHeader(405)
-		w.Write([]byte("Method Not allowed"))
+		w.Header().Set("Allow", http.MethodPost)
+		//Use the http.Error() function to send a 405 code and "Method not allowd" respomse body.
+		//this calls "w.WriteHeader(405)" and "w.Write([]byte("Method Not allowed"))" behing the scenes"
+		http.Error(w, "Method Not allowed", 405)
 		return
 	}
 
@@ -48,7 +65,7 @@ func main() {
 	mux.HandleFunc("/", home)
 	//register the new handlers
 	mux.HandleFunc("/snippet", showSnippet)
-	mux.HandleFunc("/snippet/createSnippet", createSnippet)
+	mux.HandleFunc("/snippet/create", createSnippet)
 
 	//Use the http.ListenAndServe() functioin to start a new web server. We pass in
 	//two parameters: the TCP network address to listen on( iin this: 4000)
