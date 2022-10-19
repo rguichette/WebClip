@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	//"html/template"
+	// "html/template"
 	"net/http"
 	"strconv"
 
@@ -19,16 +19,16 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
+
 	s, err := app.clips.Latest()
 
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-
-	for _, clips := range s {
-		fmt.Fprint(w, "%v\n", clips)
-	}
+	// data := &templateData{Clips: s}
+	//use the new render helper
+	app.render(w, r, "home.page.tmpl", &templateData{Clips: s})
 	//use the template.ParseFiles() function to read template file into a
 	//templateset. If there's an error, we log the detailed error message and use
 	//the http.Error() function to send a generic 500 internal server Error
@@ -44,7 +44,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// 	//Because the home handler function is now a method against application
 	// 	//it can access its fields, including the error logger. We'll write the log
 	// 	//message to this instead of the standard logger.
-	// 	app.errLog.Println(err.Error())
+	// 	// app.errLog.Println(err.Error())
 	// 	// log.Println(err.Error())
 	// 	app.serverError(w, err)
 	// 	// http.Error(w, "Internal Sever Error", http.StatusInternalServerError)
@@ -54,7 +54,10 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// //content as the response body. The last parameter to Execute() respresents any
 	// //dynamic data that we want to pass in which for not we'll leave as nil
 
-	// err = ts.Execute(w, nil) //review
+	// err = ts.Execute(w, data) //review
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// }
 
 	// if err != nil {
 	// 	//also update the code here to use the error logger from the application struct.
@@ -88,6 +91,30 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	//create an instance of a templateData struct hold the snippet data.
+	// data := &templateData{Clip: s}
+	app.render(w, r, "show.page.tmpl", &templateData{Clip: s})
+
+	//init a slice containing the paths to the show.page.templ file, plus the base layout and footer partial that we made earlier.
+	// files := []string{
+	// 	"./ui/html/show.page.tmpl",
+	// 	"./ui/html/base.layout.tmpl",
+	// 	"./ui/html/footer.partial.tmpl",
+	// }
+
+	//Parse the template files
+	// ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	//Pass in the data templateData stuct when executing the template.
+	// err = ts.Execute(w, data)
+	if err != nil {
+		app.serverError(w, err)
+	}
+
 	//Write the clip data as a plain-text HTTP response body.
 	fmt.Fprintf(w, "%v", s)
 

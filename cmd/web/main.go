@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -16,9 +17,10 @@ import (
 //we'll add more to it as the build progresses.
 
 type application struct {
-	errLog  *log.Logger
-	infoLog *log.Logger
-	clips   *mysql.ClipModel
+	errLog        *log.Logger
+	infoLog       *log.Logger
+	clips         *mysql.ClipModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -26,7 +28,7 @@ func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
 
 	//define a new command-line flag for the mysql dsn string
-	dsn := flag.String("dsn", "web:password/webclip?parseTime=True", "MySQL data source name")
+	dsn := flag.String("dsn", "web:pass/webclip?parseTime=True", "MySQL data source name")
 
 	flag.Parse()
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
@@ -39,13 +41,19 @@ func main() {
 	}
 
 	defer db.Close()
-	//init a mysql clipModel instance and add it to the application dependencies
+	//init ne template cache
+	templateCache, err := newTemplateCache("./ui/html")
+	if err != nil {
+		errLog.Fatal(err)
+	}
 
 	//Init new instance of Application containing the dependencies.
+	//add it to the application
 	app := &application{
-		errLog:  errLog,
-		infoLog: infoLog,
-		clips:   &mysql.ClipModel{DB: db},
+		errLog:        errLog,
+		infoLog:       infoLog,
+		clips:         &mysql.ClipModel{DB: db},
+		templateCache: templateCache,
 	}
 
 	srv := &http.Server{
